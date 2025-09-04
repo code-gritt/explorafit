@@ -13,8 +13,8 @@ import "leaflet/dist/leaflet.css";
 import { RootState } from "@/store";
 import { setAuth } from "@/store/authSlice";
 import L from "leaflet";
+import Loader from "@/scenes/Loader";
 
-// Fix Leaflet default icon for Vite
 const icon = L.icon({
   iconUrl: "/leaflet/marker-icon.png",
   iconRetinaUrl: "/leaflet/marker-icon-2x.png",
@@ -45,37 +45,27 @@ function MapPage() {
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>();
-
   const [waypoints, setWaypoints] = useState<L.LatLng[]>([]);
   const [distance, setDistance] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect if not authenticated
   useEffect(() => {
-    if (!token || !user) {
-      navigate("/login");
-    }
+    if (!token || !user) navigate("/login");
   }, [token, user, navigate]);
 
-  // Calculate total distance in km
   useEffect(() => {
-    if (waypoints.length < 2) {
-      setDistance(0);
-      return;
-    }
-    const total = waypoints.reduce((acc, curr, idx) => {
-      if (idx === 0) return 0;
-      return acc + waypoints[idx - 1].distanceTo(curr) / 1000;
-    }, 0);
+    if (waypoints.length < 2) return setDistance(0);
+    const total = waypoints.reduce(
+      (acc, curr, idx) =>
+        idx === 0 ? 0 : acc + waypoints[idx - 1].distanceTo(curr) / 1000,
+      0
+    );
     setDistance(parseFloat(total.toFixed(2)));
   }, [waypoints]);
 
-  // Map click handler
   function MapClickHandler() {
-    useMapEvents({
-      click: (e) => setWaypoints((prev) => [...prev, e.latlng]),
-    });
+    useMapEvents({ click: (e) => setWaypoints((prev) => [...prev, e.latlng]) });
     return null;
   }
 
@@ -84,27 +74,19 @@ function MapPage() {
     setDistance(0);
   };
 
-  // Form submit handler
   const onSubmit = async (data: FormData) => {
-    if (waypoints.length < 2) {
-      setError("Add at least two points to create a route");
-      return;
-    }
-
-    if (user && !user.isPremium && (user.credits ?? 0) <= 0) {
-      setError("Insufficient credits to create a route");
-      return;
-    }
+    if (waypoints.length < 2)
+      return setError("Add at least two points to create a route");
+    if (user && !user.isPremium && (user.credits ?? 0) <= 0)
+      return setError("Insufficient credits to create a route");
 
     setIsLoading(true);
     setError(null);
 
     try {
-      // Fix: PostgreSQL expects JSON string for JSON type
       const polylineJson = JSON.stringify(
         waypoints.map((wp) => ({ lat: wp.lat, lng: wp.lng }))
       );
-
       const response = await fetch("https://explorafit-backend.onrender.com", {
         method: "POST",
         headers: {
@@ -113,37 +95,20 @@ function MapPage() {
         },
         body: JSON.stringify({
           query: `
-            mutation CreateRoute(
-              $name: String!,
-              $difficulty: String!,
-              $description: String,
-              $landmarks: String,
-              $distance: Float!,
-              $city: String,
-              $polyline: JSON!
-            ) {
-              createRoute(
-                name: $name,
-                difficulty: $difficulty,
-                description: $description,
-                landmarks: $landmarks,
-                distance: $distance,
-                city: $city,
-                polyline: $polyline
-              ) {
+            mutation CreateRoute($name: String!, $difficulty: String!, $description: String, $landmarks: String, $distance: Float!, $city: String, $polyline: JSON!) {
+              createRoute(name: $name, difficulty: $difficulty, description: $description, landmarks: $landmarks, distance: $distance, city: $city, polyline: $polyline) {
                 route { id, name, difficulty, distance, city, created_at }
                 user { id, email, isPremium, credits }
               }
             }
           `,
           variables: {
-            name: data.name,
-            difficulty: data.difficulty,
+            ...data,
+            distance,
+            polyline: polylineJson,
             description: data.description || null,
             landmarks: data.landmarks || null,
-            distance,
             city: data.city || null,
-            polyline: polylineJson,
           },
         }),
       });
@@ -152,12 +117,8 @@ function MapPage() {
       if (errors) throw new Error(errors[0].message);
 
       dispatch(
-        setAuth({
-          token: token ?? "",
-          user: responseData.createRoute.user,
-        })
+        setAuth({ token: token ?? "", user: responseData.createRoute.user })
       );
-
       navigate("/dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to create route");
@@ -168,8 +129,8 @@ function MapPage() {
 
   return (
     <div className="min-h-screen bg-primary-100 p-8">
+      <Loader isLoading={isLoading} />
       <div className="mx-auto mt-16 flex max-w-6xl gap-8">
-        {/* Map */}
         <div className="h-[600px] flex-1 overflow-hidden rounded-lg shadow-md">
           <MapContainer
             center={[51.505, -0.09]}
@@ -178,7 +139,7 @@ function MapPage() {
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              attribution="&copy; OpenStreetMap contributors"
             />
             <MapClickHandler />
             <Polyline positions={waypoints} color="blue" />
@@ -189,19 +150,16 @@ function MapPage() {
                 icon={defaultIcon}
                 draggable
                 eventHandlers={{
-                  dragend: (e) => {
-                    const newWp = e.target.getLatLng();
+                  dragend: (e) =>
                     setWaypoints((prev) =>
-                      prev.map((p, i) => (i === idx ? newWp : p))
-                    );
-                  },
+                      prev.map((p, i) => (i === idx ? e.target.getLatLng() : p))
+                    ),
                 }}
               />
             ))}
           </MapContainer>
         </div>
 
-        {/* Form */}
         <div className="w-96 rounded-lg bg-white p-6 shadow-md">
           <h2 className="mb-6 text-2xl font-bold text-primary-500">
             Create New Route
@@ -246,7 +204,6 @@ function MapPage() {
                 className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
-
             <div className="mb-4">
               <input
                 {...register("landmarks")}
@@ -254,7 +211,6 @@ function MapPage() {
                 className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
-
             <div className="mb-4">
               <input
                 {...register("city")}
@@ -264,8 +220,7 @@ function MapPage() {
             </div>
 
             <div className="mb-4 text-sm text-gray-400">
-              Distance: {distance.toFixed(2)} km
-              <br />
+              Distance: {distance.toFixed(2)} km <br />
               Credits: {user?.credits ?? 0} (Costs {user?.isPremium ? 0 : 1}{" "}
               credit)
             </div>

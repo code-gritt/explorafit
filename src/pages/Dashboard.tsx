@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import Loader from "@/scenes/Loader";
 import {
   ColumnDef,
   flexRender,
@@ -29,6 +30,12 @@ function Dashboard() {
   ]);
 
   useEffect(() => {
+    if (!token) {
+      setError("Please login to view your dashboard");
+      setIsLoading(false);
+      return;
+    }
+
     const fetchRoutes = async () => {
       setIsLoading(true);
       setError(null);
@@ -39,7 +46,7 @@ function Dashboard() {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `${token}`,
+              Authorization: token,
             },
             body: JSON.stringify({
               query: `
@@ -60,7 +67,6 @@ function Dashboard() {
 
         const { data: responseData, errors } = await response.json();
         if (errors) throw new Error(errors[0].message);
-
         setRoutes(responseData.getUserRoutes);
       } catch (e: any) {
         setError(e.message || "Failed to fetch routes");
@@ -69,12 +75,7 @@ function Dashboard() {
       }
     };
 
-    if (token) {
-      fetchRoutes();
-    } else {
-      setError("Please login to view your dashboard");
-      setIsLoading(false);
-    }
+    fetchRoutes();
   }, [token]);
 
   const columns = useMemo<ColumnDef<Route>[]>(
@@ -120,16 +121,15 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-primary-100 p-8">
+      <Loader isLoading={isLoading} />
       <div className="mx-auto mt-16 max-w-6xl">
-        {isLoading ? (
-          <div className="text-center text-gray-400">Loading routes...</div>
-        ) : error ? (
-          <div className="text-center text-red-500">{error}</div>
-        ) : routes.length === 0 ? (
+        {error && <div className="text-center text-red-500">{error}</div>}
+        {!error && routes.length === 0 && !isLoading && (
           <div className="text-center text-gray-400">
             No routes found. Create one!
           </div>
-        ) : (
+        )}
+        {!error && routes.length > 0 && !isLoading && (
           <table className="w-full overflow-hidden rounded-lg bg-white shadow-md">
             <thead className="bg-secondary-500 text-white">
               {table.getHeaderGroups().map((headerGroup) => (
