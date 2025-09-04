@@ -128,6 +128,7 @@ const Navbar = ({ isTopOfPage, selectedPage, setSelectedPage }: Props) => {
                           page="Dashboard"
                           selectedPage={selectedPage}
                           setSelectedPage={setSelectedPage}
+                          isRoute
                         />
                       </div>
                     </>

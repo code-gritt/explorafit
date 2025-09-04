@@ -130,11 +130,7 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-primary-100 p-8">
-      <div className="mx-auto max-w-6xl">
-        <h2 className="mb-6 text-3xl font-bold text-primary-500">
-          Your Dashboard
-        </h2>
-
+      <div className="mx-auto mt-16 max-w-6xl">
         {isLoading ? (
           <div className="text-center text-gray-400">Loading routes...</div>
         ) : error ? (
