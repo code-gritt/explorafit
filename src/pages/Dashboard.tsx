@@ -9,6 +9,7 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import Loader from "@/scenes/Loader";
 
 interface Route {
   id: string;
@@ -80,18 +81,9 @@ function Dashboard() {
   // ✅ Define columns with types
   const columns = useMemo<ColumnDef<Route>[]>(
     () => [
-      {
-        accessorKey: "name",
-        header: "Name",
-      },
-      {
-        accessorKey: "difficulty",
-        header: "Difficulty",
-      },
-      {
-        accessorKey: "distance",
-        header: "Distance (km)",
-      },
+      { accessorKey: "name", header: "Name" },
+      { accessorKey: "difficulty", header: "Difficulty" },
+      { accessorKey: "distance", header: "Distance (km)" },
       {
         accessorKey: "city",
         header: "City",
@@ -129,60 +121,65 @@ function Dashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-primary-100 p-8">
-      <div className="mx-auto mt-16 max-w-6xl">
-        {isLoading ? (
-          <div className="text-center text-gray-400">Loading routes...</div>
-        ) : error ? (
-          <div className="text-center text-red-500">{error}</div>
-        ) : routes.length === 0 ? (
-          <div className="text-center text-gray-400">
-            No routes found. Create one!
-          </div>
-        ) : (
-          <table className="w-full overflow-hidden rounded-lg bg-white shadow-md">
-            <thead className="bg-secondary-500 text-white">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="cursor-pointer p-3 text-left"
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                      <span>
-                        {{
-                          asc: " 🔼",
-                          desc: " 🔽",
-                        }[header.column.getIsSorted() as string] ?? ""}
-                      </span>
-                    </th>
+    <>
+      {/* Loader overlay */}
+      <Loader isLoading={isLoading} />
+
+      <div className="min-h-screen bg-primary-100 p-8">
+        <div className="mx-auto mt-16 max-w-6xl">
+          {error ? (
+            <div className="text-center text-red-500">{error}</div>
+          ) : routes.length === 0 && !isLoading ? (
+            <div className="text-center text-gray-400">
+              No routes found. Create one!
+            </div>
+          ) : (
+            routes.length > 0 && (
+              <table className="w-full overflow-hidden rounded-lg bg-white shadow-md">
+                <thead className="bg-secondary-500 text-white">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          className="cursor-pointer p-3 text-left"
+                          onClick={header.column.getToggleSortingHandler()}
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                          <span>
+                            {{
+                              asc: " 🔼",
+                              desc: " 🔽",
+                            }[header.column.getIsSorted() as string] ?? ""}
+                          </span>
+                        </th>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-b border-gray-400">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="p-3">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.map((row) => (
+                    <tr key={row.id} className="border-b border-gray-400">
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="p-3">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+                </tbody>
+              </table>
+            )
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
