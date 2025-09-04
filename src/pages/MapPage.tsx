@@ -14,7 +14,7 @@ import { RootState } from "@/store";
 import { setAuth } from "@/store/authSlice";
 import L from "leaflet";
 
-// Fix Leaflet default icon paths for Vite
+// Leaflet default icon fix for Vite
 const icon = L.icon({
   iconUrl: "/leaflet/marker-icon.png",
   iconRetinaUrl: "/leaflet/marker-icon-2x.png",
@@ -57,19 +57,19 @@ function MapPage() {
     }
   }, [token, user, navigate]);
 
-  // Calculate distance
+  // Calculate total distance in km
   useEffect(() => {
-    if (waypoints.length < 2) {
-      setDistance(0);
-      return;
-    }
-    let total = 0;
-    for (let i = 0; i < waypoints.length - 1; i++) {
-      total += waypoints[i].distanceTo(waypoints[i + 1]) / 1000; // km
-    }
+    if (waypoints.length < 2) return setDistance(0);
+
+    const total = waypoints.reduce((acc, curr, idx) => {
+      if (idx === 0) return 0;
+      return acc + waypoints[idx - 1].distanceTo(curr) / 1000;
+    }, 0);
+
     setDistance(parseFloat(total.toFixed(2)));
   }, [waypoints]);
 
+  // Submit handler
   const onSubmit = async (data: FormData) => {
     if (waypoints.length < 2) {
       setError("Add at least two points to create a route");
@@ -82,6 +82,7 @@ function MapPage() {
 
     setIsLoading(true);
     setError(null);
+
     try {
       const polylineJson = waypoints.map((wp) => ({
         lat: wp.lat,
@@ -96,13 +97,29 @@ function MapPage() {
         },
         body: JSON.stringify({
           query: `
-              mutation CreateRoute($name: String!, $difficulty: String!, $description: String, $landmarks: String, $distance: Float!, $city: String, $polyline: JSONB!) {
-                createRoute(name: $name, difficulty: $difficulty, description: $description, landmarks: $landmarks, distance: $distance, city: $city, polyline: $polyline) {
-                  route { id, name, difficulty, distance, city, created_at }
-                  user { id, email, isPremium, credits }
-                }
+            mutation CreateRoute(
+              $name: String!, 
+              $difficulty: String!, 
+              $description: String, 
+              $landmarks: String, 
+              $distance: Float!, 
+              $city: String, 
+              $polyline: JSON!
+            ) {
+              createRoute(
+                name: $name, 
+                difficulty: $difficulty, 
+                description: $description, 
+                landmarks: $landmarks, 
+                distance: $distance, 
+                city: $city, 
+                polyline: $polyline
+              ) {
+                route { id, name, difficulty, distance, city, created_at }
+                user { id, email, isPremium, credits }
               }
-            `,
+            }
+          `,
           variables: {
             name: data.name,
             difficulty: data.difficulty,
@@ -118,26 +135,26 @@ function MapPage() {
       const { data: responseData, errors } = await response.json();
       if (errors) throw new Error(errors[0].message);
 
+      // Update Redux auth state
       dispatch(
         setAuth({
-          token: token ?? null,
+          token: token ?? "",
           user: responseData.createRoute.user,
         })
       );
 
       navigate("/dashboard");
-    } catch (e: any) {
-      setError(e.message || "Failed to create route");
+    } catch (err: any) {
+      setError(err.message || "Failed to create route");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Map click handler
   function MapClickHandler() {
     useMapEvents({
-      click: (e) => {
-        setWaypoints((prev) => [...prev, e.latlng]);
-      },
+      click: (e) => setWaypoints((prev) => [...prev, e.latlng]),
     });
     return null;
   }
@@ -172,11 +189,9 @@ function MapPage() {
                 eventHandlers={{
                   dragend: (e) => {
                     const newWp = e.target.getLatLng();
-                    setWaypoints((prev) => {
-                      const newArr = [...prev];
-                      newArr[idx] = newWp;
-                      return newArr;
-                    });
+                    setWaypoints((prev) =>
+                      prev.map((p, i) => (i === idx ? newWp : p))
+                    );
                   },
                 }}
               />

@@ -1,3 +1,5 @@
+scalar JSON
+
 type Route {
   id: ID!
   name: String!
@@ -39,6 +41,6 @@ type Mutation {
     landmarks: String
     distance: Float!
     city: String
-    polyline: JSONB!
+    polyline: JSON!
   ): CreateRoutePayload!
 }
