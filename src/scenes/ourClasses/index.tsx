@@ -39,7 +39,7 @@ const classes: Array<ClassType> = [
   {
     name: "Custom Ride Planning",
     description:
-      "Design your own personalized cycling route with Explorafit’s DIY planner. Tailor every journey to your preferences.",
+      "Design your own personalized cycling route with server’s DIY planner. Tailor every journey to your preferences.",
     image: image6,
   },
 ];
