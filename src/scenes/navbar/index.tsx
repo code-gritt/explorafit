@@ -26,7 +26,62 @@ const Navbar = ({ isTopOfPage, selectedPage, setSelectedPage }: Props) => {
         <div className={`${flexBetween} mx-auto w-5/6`}>
           <div className={`${flexBetween} w-full gap-16`}>
             {/* LEFT SIDE */}
-            <img alt="logo" src={Logo} />
+            <a href="/">
+              <div className="flex items-center gap-3">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 64 64"
+                  width="40"
+                  height="40"
+                  fill="currentColor"
+                  className="text-primary-500"
+                >
+                  <circle
+                    cx="16"
+                    cy="48"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    fill="none"
+                  />
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    fill="none"
+                  />
+                  <line
+                    x1="16"
+                    y1="48"
+                    x2="32"
+                    y2="20"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  />
+                  <line
+                    x1="48"
+                    y1="48"
+                    x2="32"
+                    y2="20"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  />
+                  <line
+                    x1="32"
+                    y1="20"
+                    x2="32"
+                    y2="10"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  />
+                </svg>
+                <span className="text-2xl font-bold text-primary-500">
+                  Explorafit
+                </span>
+              </div>
+            </a>
 
             {/* RIGHT SIDE */}
             {isAboveMediumScreens ? (

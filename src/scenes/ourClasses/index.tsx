@@ -11,35 +11,35 @@ import Class from "./Class";
 
 const classes: Array<ClassType> = [
   {
-    name: "Weight Training Classes",
+    name: "Urban Commute Routes",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Discover the fastest and safest ways to get around the city on two wheels. Avoid heavy traffic and enjoy smoother rides.",
     image: image1,
   },
   {
-    name: "Yoga Classes",
+    name: "Scenic Weekend Rides",
     image: image2,
   },
   {
-    name: "Ab Core Classes",
+    name: "Eco-Friendly Paths",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Plan routes that prioritize bike lanes and greenways, helping you ride sustainably while enjoying the outdoors.",
     image: image3,
   },
   {
-    name: "Adventure Classes",
+    name: "Adventure Trails",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Looking for a challenge? Explore off-road cycling paths and longer rides that push your limits and reward your spirit.",
     image: image4,
   },
   {
-    name: "Fitness Classes",
+    name: "Community Favorites",
     image: image5,
   },
   {
-    name: "Training Classes",
+    name: "Custom Ride Planning",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Design your own personalized cycling route with Explorafit’s DIY planner. Tailor every journey to your preferences.",
     image: image6,
   },
 ];
@@ -66,12 +66,12 @@ const OurClasses = ({ setSelectedPage }: Props) => {
           }}
         >
           <div className="md:w-3/5">
-            <HText>OUR CLASSES</HText>
+            <HText>OUR ROUTE COLLECTION</HText>
             <p className="py-5">
-              Fringilla a sed at suspendisse ut enim volutpat. Rhoncus vel est
-              tellus quam porttitor. Mauris velit euismod elementum arcu neque
-              facilisi. Amet semper tortor facilisis metus nibh. Rhoncus sit
-              enim mattis odio in risus nunc.
+              Explorafit offers curated cycling routes for every type of rider—
+              from daily commuters to weekend adventurers. Whether you’re
+              seeking efficiency, scenery, or community-shared favorites, our
+              library of routes helps you ride smarter and go further.
             </p>
           </div>
         </motion.div>

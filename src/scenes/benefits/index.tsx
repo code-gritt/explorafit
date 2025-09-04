@@ -13,21 +13,21 @@ import Benefit from "./Benefit";
 const benefits: Array<BenefitType> = [
   {
     icon: <HomeModernIcon className="h-6 w-6" />,
-    title: "State of the Art Facilities",
+    title: "Smart Route Planning",
     description:
-      "Neque adipiscing amet amet enim. Feugiat dolor enim fermentum in a in lectus pellentesque. Ullamcorper et.",
+      "Create and customize bike-friendly routes using OpenStreetMap. Explore shortcuts, avoid traffic, and make every ride efficient.",
   },
   {
     icon: <UserGroupIcon className="h-6 w-6" />,
-    title: "100's of Diverse Classes",
+    title: "Community Sharing",
     description:
-      "Eu ipsum id egestas risus tempus enim semper felis quis. Nec consectetur ac venenatis facilisi est. Eget ac turpis id.",
+      "Share your favorite cycling paths with other urban riders and discover hidden gems recommended by fellow cyclists.",
   },
   {
     icon: <AcademicCapIcon className="h-6 w-6" />,
-    title: "Expert and Pro Trainers",
+    title: "Ride Insights",
     description:
-      "Fusce vestibulum aliquam ut cras. Nisl lectus egestas sapien nisl. Lacus at mi sit pellentesque. Congue parturient.",
+      "Track your journeys, analyze distance and effort, and gain valuable insights to improve your cycling experience.",
   },
 ];
 
@@ -60,11 +60,11 @@ const Benefits = ({ setSelectedPage }: Props) => {
             visible: { opacity: 1, x: 0 },
           }}
         >
-          <HText>MORE THAN JUST GYM.</HText>
+          <HText>MORE THAN JUST A MAP.</HText>
           <p className="my-5 text-sm">
-            We provide world class fitness equipment, trainers and classes to
-            get you to your ultimate fitness goals with ease. We provide true
-            care into each and every member.
+            Explorafit helps cyclists design smarter routes, connect with
+            like-minded riders, and discover eco-friendly ways to move through
+            the city. It’s more than planning—it’s building a cycling lifestyle.
           </p>
         </motion.div>
 
@@ -112,8 +112,8 @@ const Benefits = ({ setSelectedPage }: Props) => {
                   }}
                 >
                   <HText>
-                    MILLIONS OF HAPPY MEMBERS GETTING{" "}
-                    <span className="text-primary-500">FIT</span>
+                    THOUSANDS OF CYCLISTS TRUST{" "}
+                    <span className="text-primary-500">Explorafit</span>
                   </HText>
                 </motion.div>
               </div>
@@ -131,18 +131,14 @@ const Benefits = ({ setSelectedPage }: Props) => {
               }}
             >
               <p className="my-5">
-                Nascetur aenean massa auctor tincidunt. Iaculis potenti amet
-                egestas ultrices consectetur adipiscing ultricies enim. Pulvinar
-                fames vitae vitae quis. Quis amet vulputate tincidunt at in
-                nulla nec. Consequat sed facilisis dui sit egestas ultrices
-                tellus. Ullamcorper arcu id pretium sapien proin integer nisl.
-                Felis orci diam odio.
+                Whether you ride daily for commuting or on weekends for fun,
+                Explorafit makes planning routes simple, enjoyable, and tailored
+                to your needs. Navigate with confidence and stay on track.
               </p>
               <p className="mb-5">
-                Fringilla a sed at suspendisse ut enim volutpat. Rhoncus vel est
-                tellus quam porttitor. Mauris velit euismod elementum arcu neque
-                facilisi. Amet semper tortor facilisis metus nibh. Rhoncus sit
-                enim mattis odio in risus nunc.
+                Join a growing community of eco-friendly riders who share their
+                best routes, tips, and experiences. Together, we’re shaping the
+                future of urban cycling.
               </p>
             </motion.div>
 
@@ -150,7 +146,7 @@ const Benefits = ({ setSelectedPage }: Props) => {
             <div className="relative mt-16">
               <div className="before:absolute before:-bottom-20 before:right-40 before:z-[-1] before:content-sparkles">
                 <ActionButton setSelectedPage={setSelectedPage}>
-                  Join Now
+                  Start Riding Smarter
                 </ActionButton>
               </div>
             </div>

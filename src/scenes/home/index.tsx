@@ -1,7 +1,6 @@
 import useMediaQuery from "@/hooks/useMediaQuery";
 import { SelectedPage } from "@/shared/types";
 import ActionButton from "@/shared/ActionButton";
-import HomePageText from "@/assets/HomePageText.png";
 import HomePageGraphic from "@/assets/HomePageGraphic.png";
 import SponsorRedBull from "@/assets/SponsorRedBull.png";
 import SponsorForbes from "@/assets/SponsorForbes.png";
@@ -39,14 +38,33 @@ const Home = ({ setSelectedPage }: Props) => {
           >
             <div className="relative">
               <div className="before:absolute before:-top-20 before:-left-20 before:z-[-1] md:before:content-evolvetext">
-                <img alt="home-page-text" src={HomePageText} />
+                {/* Huge Explorafit SVG Text Logo */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 1200 200"
+                  className="w-full max-w-4xl text-primary-500"
+                >
+                  <text
+                    x="50%"
+                    y="50%"
+                    dominantBaseline="middle"
+                    textAnchor="middle"
+                    fontSize="96"
+                    fontWeight="700"
+                    fill="currentColor"
+                    fontFamily="Poppins, sans-serif"
+                  >
+                    Explorafit
+                  </text>
+                </svg>
               </div>
             </div>
 
             <p className="mt-8 text-sm">
-              Unrivaled Gym. Unparalleled Training Fitness Classes. World Class
-              Studios to get the Body Shapes That you Dream of.. Get Your Dream
-              Body Now.
+              Plan smarter bike rides with <strong>Explorafit</strong>. Discover
+              eco-friendly cycling routes, track your journeys, and share your
+              favorite paths with the urban cycling community. Your next
+              adventure starts here.
             </p>
           </motion.div>
 
@@ -63,14 +81,14 @@ const Home = ({ setSelectedPage }: Props) => {
             }}
           >
             <ActionButton setSelectedPage={setSelectedPage}>
-              Join Now
+              Start Exploring
             </ActionButton>
             <AnchorLink
               className="text-sm font-bold text-primary-500 underline hover:text-secondary-500"
               onClick={() => setSelectedPage(SelectedPage.ContactUs)}
               href={`#${SelectedPage.ContactUs}`}
             >
-              <p>Learn More</p>
+              <p>How It Works</p>
             </AnchorLink>
           </motion.div>
         </div>
