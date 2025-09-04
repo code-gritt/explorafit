@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid";
-import Logo from "@/assets/Logo.png";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/store";
 import Link from "./Link";
 import { SelectedPage } from "@/shared/types";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import ActionButton from "@/shared/ActionButton";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store";
+import { clearAuth } from "@/store/authSlice";
 
 type Props = {
   isTopOfPage: boolean;
@@ -20,11 +20,17 @@ const Navbar = ({ isTopOfPage, selectedPage, setSelectedPage }: Props) => {
   const isAboveMediumScreens = useMediaQuery("(min-width: 1060px)");
   const navbarBackground = isTopOfPage ? "" : "bg-primary-100 drop-shadow";
   const { user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
 
   // Get user initials from email
   const initials = user?.email
     ? user.email.split("@")[0].slice(0, 2).toUpperCase()
     : "";
+
+  const handleLogout = () => {
+    dispatch(clearAuth()); // ✅ FIX
+    window.location.href = "/"; // optional: redirect to homepage
+  };
 
   return (
     <nav>
@@ -130,6 +136,12 @@ const Navbar = ({ isTopOfPage, selectedPage, setSelectedPage }: Props) => {
                           setSelectedPage={setSelectedPage}
                           isRoute
                         />
+                        <button
+                          onClick={handleLogout}
+                          className="rounded-md bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"
+                        >
+                          Logout
+                        </button>
                       </div>
                     </>
                   ) : (
@@ -198,6 +210,12 @@ const Navbar = ({ isTopOfPage, selectedPage, setSelectedPage }: Props) => {
                   selectedPage={selectedPage}
                   setSelectedPage={setSelectedPage}
                 />
+                <button
+                  onClick={handleLogout}
+                  className="rounded-md bg-red-500 px-3 py-1 text-white hover:bg-red-600"
+                >
+                  Logout
+                </button>
               </>
             )}
           </div>
