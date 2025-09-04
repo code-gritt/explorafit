@@ -10,6 +10,7 @@ import Footer from "@/scenes/footer";
 import { SelectedPage } from "@/shared/types";
 import Navbar from "./scenes/navbar";
 import Dashboard from "./pages/Dashboard";
+import MapPage from "./pages/MapPage";
 
 function App() {
   const [selectedPage, setSelectedPage] = useState<SelectedPage>(
@@ -46,6 +47,7 @@ function App() {
         {/* Dashboard placeholder */}
 
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/map" element={<MapPage />} />
         {/* Default homepage with sections */}
         <Route
           path="/"

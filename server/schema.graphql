@@ -24,7 +24,21 @@ type Query {
   getUserRoutes: [Route!]!
 }
 
+type CreateRoutePayload {
+  route: Route!
+  user: User!
+}
+
 type Mutation {
   signup(email: String!, password: String!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
+  createRoute(
+    name: String!
+    difficulty: String!
+    description: String
+    landmarks: String
+    distance: Float!
+    city: String
+    polyline: JSONB!
+  ): CreateRoutePayload!
 }

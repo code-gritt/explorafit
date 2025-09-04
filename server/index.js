@@ -103,6 +103,66 @@ const resolvers = {
         throw new Error(`Login failed: ${error.message}`);
       }
     },
+    createRoute: async (_, args, context) => {
+      const { userId } = context;
+      if (!userId) throw new Error("Unauthorized");
+
+      try {
+        // Get user credits and isPremium
+        const {
+          rows: [userRow],
+        } = await pool.query(
+          "SELECT is_premium, credits FROM users WHERE id = $1",
+          [userId]
+        );
+        if (!userRow) throw new Error("User not found");
+
+        if (!userRow.is_premium && userRow.credits <= 0)
+          throw new Error("Insufficient credits");
+
+        // Deduct credit if not premium
+        let newCredits = userRow.credits;
+        if (!userRow.is_premium) {
+          newCredits -= 1;
+          await pool.query("UPDATE users SET credits = $1 WHERE id = $2", [
+            newCredits,
+            userId,
+          ]);
+        }
+
+        // Insert route
+        const {
+          rows: [routeRow],
+        } = await pool.query(
+          "INSERT INTO routes(user_id, name, difficulty, description, landmarks, distance, city, polyline) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, name, difficulty, distance, city, created_at",
+          [
+            userId,
+            args.name,
+            args.difficulty,
+            args.description,
+            args.landmarks,
+            args.distance,
+            args.city,
+            args.polyline,
+          ]
+        );
+
+        const route = mapRoute(routeRow);
+
+        // Get updated user
+        const {
+          rows: [updatedUserRow],
+        } = await pool.query(
+          "SELECT id, email, is_premium, credits FROM users WHERE id = $1",
+          [userId]
+        );
+        const updatedUser = mapUser(updatedUserRow);
+
+        return { route, user: updatedUser };
+      } catch (error) {
+        throw new Error(`Create route failed: ${error.message}`);
+      }
+    },
   },
 };
 

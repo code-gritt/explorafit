@@ -6,13 +6,34 @@ type Props = {
   page: string;
   selectedPage: SelectedPage;
   setSelectedPage: (value: SelectedPage) => void;
-  isRoute?: boolean; // 👈 new prop
+  isRoute?: boolean;
+  isMapRoute?: boolean;
 };
 
-const Link = ({ page, selectedPage, setSelectedPage, isRoute }: Props) => {
+const Link = ({
+  page,
+  selectedPage,
+  setSelectedPage,
+  isRoute,
+  isMapRoute,
+}: Props) => {
   const lowerCasePage = page.toLowerCase().replace(/ /g, "") as SelectedPage;
 
   if (isRoute) {
+    return (
+      <RouterLink
+        to={`/${lowerCasePage}`}
+        className={`${
+          selectedPage === lowerCasePage ? "text-primary-500" : ""
+        } transition duration-500 hover:text-primary-300`}
+        onClick={() => setSelectedPage(lowerCasePage)}
+      >
+        {page}
+      </RouterLink>
+    );
+  }
+
+  if (isMapRoute) {
     return (
       <RouterLink
         to={`/${lowerCasePage}`}
