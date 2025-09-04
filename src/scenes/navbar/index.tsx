@@ -5,6 +5,8 @@ import Link from "./Link";
 import { SelectedPage } from "@/shared/types";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import ActionButton from "@/shared/ActionButton";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 type Props = {
   isTopOfPage: boolean;
@@ -17,6 +19,12 @@ const Navbar = ({ isTopOfPage, selectedPage, setSelectedPage }: Props) => {
   const [isMenuToggled, setIsMenuToggled] = useState<boolean>(false);
   const isAboveMediumScreens = useMediaQuery("(min-width: 1060px)");
   const navbarBackground = isTopOfPage ? "" : "bg-primary-100 drop-shadow";
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  // Get user initials from email
+  const initials = user?.email
+    ? user.email.split("@")[0].slice(0, 2).toUpperCase()
+    : "";
 
   return (
     <nav>
@@ -109,10 +117,30 @@ const Navbar = ({ isTopOfPage, selectedPage, setSelectedPage }: Props) => {
                   />
                 </div>
                 <div className={`${flexBetween} gap-8`}>
-                  <p>Sign In</p>
-                  <ActionButton setSelectedPage={setSelectedPage}>
-                    Become a Member
-                  </ActionButton>
+                  {user ? (
+                    <>
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-white">
+                          {initials}
+                        </div>
+                        <span className="text-sm">Credits: {user.credits}</span>
+                        <Link
+                          page="Dashboard"
+                          selectedPage={selectedPage}
+                          setSelectedPage={setSelectedPage}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <a href="/login" className="text-sm">
+                        Sign In
+                      </a>
+                      <ActionButton setSelectedPage={setSelectedPage}>
+                        Become a Member
+                      </ActionButton>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
@@ -130,14 +158,11 @@ const Navbar = ({ isTopOfPage, selectedPage, setSelectedPage }: Props) => {
       {/* MOBILE MENU MODAL */}
       {!isAboveMediumScreens && isMenuToggled && (
         <div className="fixed right-0 bottom-0 z-40 h-full w-[300px] bg-primary-100 drop-shadow-xl">
-          {/* CLOSE ICON */}
           <div className="flex justify-end p-12">
             <button onClick={() => setIsMenuToggled(!isMenuToggled)}>
               <XMarkIcon className="h-6 w-6 text-gray-400" />
             </button>
           </div>
-
-          {/* MENU ITEMS */}
           <div className="ml-[33%] flex flex-col gap-10 text-2xl">
             <Link
               page="Home"
@@ -159,6 +184,21 @@ const Navbar = ({ isTopOfPage, selectedPage, setSelectedPage }: Props) => {
               selectedPage={selectedPage}
               setSelectedPage={setSelectedPage}
             />
+            {user && (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-500 text-white">
+                    {initials}
+                  </div>
+                  <span>Credits: {user.credits}</span>
+                </div>
+                <Link
+                  page="Dashboard"
+                  selectedPage={selectedPage}
+                  setSelectedPage={setSelectedPage}
+                />
+              </>
+            )}
           </div>
         </div>
       )}
