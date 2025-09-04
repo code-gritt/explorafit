@@ -50,7 +50,8 @@ const resolvers = {
         // sign JWT
         const token = jwt.sign(
           { userId: user.id },
-          "30dfb2a4a8840222dc34b4041f1eebdd07d57b9e5f3f14baed1108340c10b02d10e752b5a9f6dd457bbe1383f779eca4295b2f0974b596d1bd3f4956c9eda8ef",
+          process.env.JWT_SECRET ||
+            "30dfb2a4a8840222dc34b4041f1eebdd07d57b9e5f3f14baed1108340c10b02d10e752b5a9f6dd457bbe1383f779eca4295b2f0974b596d1bd3f4956c9eda8ef",
           { expiresIn: "7d" }
         );
 
@@ -78,7 +79,8 @@ const resolvers = {
         // sign JWT
         const token = jwt.sign(
           { userId: user.id },
-          "30dfb2a4a8840222dc34b4041f1eebdd07d57b9e5f3f14baed1108340c10b02d10e752b5a9f6dd457bbe1383f779eca4295b2f0974b596d1bd3f4956c9eda8ef",
+          process.env.JWT_SECRET ||
+            "30dfb2a4a8840222dc34b4041f1eebdd07d57b9e5f3f14baed1108340c10b02d10e752b5a9f6dd457bbe1383f779eca4295b2f0974b596d1bd3f4956c9eda8ef",
           { expiresIn: "7d" }
         );
 
@@ -96,6 +98,18 @@ const server = new ApolloServer({
   context: ({ req }) => ({ pool }),
 });
 
-server.listen().then(({ url }) => {
-  console.log(`🚀 Server ready at ${url}`);
-});
+// Enable CORS for frontend (change origin to your frontend URL)
+server
+  .listen({
+    port: process.env.PORT || 4000,
+    cors: {
+      origin: [
+        "http://localhost:3000", // local dev frontend
+        "https://explorafit.vercel.app", // deployed frontend
+      ],
+      credentials: true,
+    },
+  })
+  .then(({ url }) => {
+    console.log(`🚀 Server ready at ${url}`);
+  });
