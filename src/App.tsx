@@ -9,6 +9,7 @@ import ContactUs from "@/scenes/contactUs";
 import Footer from "@/scenes/footer";
 import { SelectedPage } from "@/shared/types";
 import Navbar from "./scenes/navbar";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   const [selectedPage, setSelectedPage] = useState<SelectedPage>(
@@ -42,10 +43,9 @@ function App() {
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
-
         {/* Dashboard placeholder */}
-        <Route path="/dashboard" element={<div>Dashboard Placeholder</div>} />
 
+        <Route path="/dashboard" element={<Dashboard />} />
         {/* Default homepage with sections */}
         <Route
           path="/"

@@ -19,13 +19,37 @@ const mapUser = (row) => ({
   id: row.id,
   email: row.email,
   isPremium: row.is_premium,
-  credits: row.credits, // Include credits
+  credits: row.credits,
+});
+
+// Helper: map DB route → GraphQL route
+const mapRoute = (row) => ({
+  id: row.id,
+  name: row.name,
+  difficulty: row.difficulty,
+  distance: row.distance,
+  city: row.city,
+  created_at: row.created_at.toISOString(),
 });
 
 // Resolvers
 const resolvers = {
   Query: {
     ping: () => "Pong",
+    getUserRoutes: async (_, __, context) => {
+      const { userId } = context; // From auth context
+      if (!userId) throw new Error("Unauthorized");
+
+      try {
+        const { rows } = await pool.query(
+          "SELECT id, name, difficulty, distance, city, created_at FROM routes WHERE user_id = $1 ORDER BY created_at DESC",
+          [userId]
+        );
+        return rows.map(mapRoute);
+      } catch (error) {
+        throw new Error(`Failed to fetch routes: ${error.message}`);
+      }
+    },
   },
   Mutation: {
     signup: async (_, { email, password }) => {
@@ -85,7 +109,23 @@ const resolvers = {
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  context: ({ req }) => ({ pool }),
+  context: ({ req }) => {
+    const token = req.headers.authorization || "";
+    let userId = null;
+    if (token) {
+      try {
+        const decoded = jwt.verify(
+          token,
+          process.env.JWT_SECRET ||
+            "30dfb2a4a8840222dc34b4041f1eebdd07d57b9e5f3f14baed1108340c10b02d10e752b5a9f6dd457bbe1383f779eca4295b2f0974b596d1bd3f4956c9eda8ef"
+        );
+        userId = decoded.userId;
+      } catch (error) {
+        console.log("Invalid token");
+      }
+    }
+    return { pool, userId };
+  },
 });
 
 // Enable CORS for frontend
