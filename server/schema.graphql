@@ -1,3 +1,5 @@
+scalar JSONB
+
 type Route {
   id: ID!
   name: String!
