@@ -18,8 +18,11 @@ function SignUp() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit = async (data: FormData) => {
+    setIsLoading(true);
+    setError(null);
     try {
       const response = await fetch("https://explorafit-backend.onrender.com", {
         method: "POST",
@@ -35,17 +38,22 @@ function SignUp() {
           `,
         }),
       });
+
       const { data: responseData, errors } = await response.json();
       if (errors) throw new Error(errors[0].message);
+
       dispatch(
         setAuth({
           token: responseData.signup.token,
           user: responseData.signup.user,
         })
       );
+
       navigate("/dashboard");
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message || "Something went wrong");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -55,6 +63,7 @@ function SignUp() {
         <h2 className="mb-6 text-center text-2xl font-bold text-primary-500">
           Sign Up for Explorafit
         </h2>
+
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
             <input
@@ -71,6 +80,7 @@ function SignUp() {
               </span>
             )}
           </div>
+
           <div className="mb-6">
             <input
               type="password"
@@ -90,18 +100,26 @@ function SignUp() {
               </span>
             )}
           </div>
+
           <button
             type="submit"
-            className="w-full rounded-md bg-secondary-500 p-3 text-white transition duration-300 hover:bg-primary-500"
+            disabled={isLoading}
+            className={`w-full rounded-md p-3 text-white transition duration-300 ${
+              isLoading
+                ? "cursor-not-allowed bg-gray-400"
+                : "bg-secondary-500 hover:bg-primary-500"
+            }`}
           >
-            Sign Up
+            {isLoading ? "Signing up..." : "Sign Up"}
           </button>
+
           {error && (
             <span className="mt-4 block text-center text-sm text-red-500">
               Error: {error}
             </span>
           )}
         </form>
+
         <p className="mt-4 text-center text-sm">
           Already have an account?{" "}
           <a href="/login" className="text-primary-500 hover:text-primary-300">

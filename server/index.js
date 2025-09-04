@@ -19,35 +19,30 @@ const mapUser = (row) => ({
   id: row.id,
   email: row.email,
   isPremium: row.is_premium,
+  credits: row.credits, // Include credits
 });
 
 // Resolvers
 const resolvers = {
   Query: {
-    ping: () => "Pong", // Test endpoint
+    ping: () => "Pong",
   },
   Mutation: {
     signup: async (_, { email, password }) => {
       try {
-        // check existing user
         const { rows: existing } = await pool.query(
           "SELECT id FROM users WHERE email = $1",
           [email]
         );
         if (existing.length > 0) throw new Error("Email already registered");
 
-        // hash password
         const passwordHash = await bcrypt.hash(password, 10);
-
-        // insert new user
         const { rows } = await pool.query(
-          "INSERT INTO users(email, password_hash, is_premium) VALUES($1, $2, $3) RETURNING id, email, is_premium",
-          [email, passwordHash, false]
+          "INSERT INTO users(email, password_hash, is_premium, credits) VALUES($1, $2, $3, $4) RETURNING id, email, is_premium, credits",
+          [email, passwordHash, false, 3]
         );
 
         const user = mapUser(rows[0]);
-
-        // sign JWT
         const token = jwt.sign(
           { userId: user.id },
           process.env.JWT_SECRET ||
@@ -60,23 +55,18 @@ const resolvers = {
         throw new Error(`Signup failed: ${error.message}`);
       }
     },
-
     login: async (_, { email, password }) => {
       try {
-        // find user
         const { rows } = await pool.query(
-          "SELECT * FROM users WHERE email = $1",
+          "SELECT id, email, is_premium, credits, password_hash FROM users WHERE email = $1",
           [email]
         );
         if (!rows[0]) throw new Error("User not found");
 
-        // verify password
         const valid = await bcrypt.compare(password, rows[0].password_hash);
         if (!valid) throw new Error("Invalid password");
 
         const user = mapUser(rows[0]);
-
-        // sign JWT
         const token = jwt.sign(
           { userId: user.id },
           process.env.JWT_SECRET ||
@@ -98,15 +88,12 @@ const server = new ApolloServer({
   context: ({ req }) => ({ pool }),
 });
 
-// Enable CORS for frontend (change origin to your frontend URL)
+// Enable CORS for frontend
 server
   .listen({
     port: process.env.PORT || 4000,
     cors: {
-      origin: [
-        "http://localhost:3000", // local dev frontend
-        "https://explorafit.vercel.app", // deployed frontend
-      ],
+      origin: ["http://localhost:3000", "https://explorafit.vercel.app"],
       credentials: true,
     },
   })
