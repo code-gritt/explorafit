@@ -10,11 +10,10 @@ export interface AuthState {
   } | null;
 }
 
-const initialState: AuthState = (() => {
-  // ✅ Load from localStorage on first run
-  const storedAuth = localStorage.getItem("auth");
-  return storedAuth ? JSON.parse(storedAuth) : { token: null, user: null };
-})();
+const initialState: AuthState = {
+  token: null,
+  user: null,
+};
 
 const authSlice = createSlice({
   name: "auth",
@@ -22,18 +21,14 @@ const authSlice = createSlice({
   reducers: {
     setAuth: (
       state,
-      action: PayloadAction<{ token: string; user: AuthState["user"] }>
+      action: PayloadAction<{ token: string | null; user: AuthState["user"] }>
     ) => {
       state.token = action.payload.token;
       state.user = action.payload.user;
-      // ✅ Persist to localStorage
-      localStorage.setItem("auth", JSON.stringify(state));
     },
     clearAuth: (state) => {
       state.token = null;
       state.user = null;
-      // ✅ Remove from localStorage on logout
-      localStorage.removeItem("auth");
     },
   },
 });

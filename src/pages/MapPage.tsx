@@ -14,6 +14,19 @@ import { RootState } from "@/store";
 import { setAuth } from "@/store/authSlice";
 import L from "leaflet";
 
+// Fix Leaflet default icon paths for Vite
+const icon = L.icon({
+  iconUrl: "/leaflet/marker-icon.png",
+  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+  shadowUrl: "/leaflet/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+export const defaultIcon = icon;
+
 interface FormData {
   name: string;
   difficulty: "Easy" | "Moderate" | "Hard";
@@ -31,18 +44,30 @@ function MapPage() {
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>();
+
   const [waypoints, setWaypoints] = useState<L.LatLng[]>([]);
   const [distance, setDistance] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Update distance when waypoints change
+  // Redirect to login if not authenticated
   useEffect(() => {
+    if (!token || !user) {
+      navigate("/login");
+    }
+  }, [token, user, navigate]);
+
+  // Calculate distance
+  useEffect(() => {
+    if (waypoints.length < 2) {
+      setDistance(0);
+      return;
+    }
     let total = 0;
     for (let i = 0; i < waypoints.length - 1; i++) {
       total += waypoints[i].distanceTo(waypoints[i + 1]) / 1000; // km
     }
-    setDistance(total);
+    setDistance(parseFloat(total.toFixed(2)));
   }, [waypoints]);
 
   const onSubmit = async (data: FormData) => {
@@ -50,15 +75,13 @@ function MapPage() {
       setError("Add at least two points to create a route");
       return;
     }
-
-    if (!token) {
-      setError("You must be logged in to create a route");
+    if (user && !user.isPremium && (user.credits ?? 0) <= 0) {
+      setError("Insufficient credits to create a route");
       return;
     }
 
     setIsLoading(true);
     setError(null);
-
     try {
       const polylineJson = waypoints.map((wp) => ({
         lat: wp.lat,
@@ -69,35 +92,35 @@ function MapPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `${token}`,
+          Authorization: token ?? "",
         },
         body: JSON.stringify({
           query: `
-            mutation {
-              createRoute(
-                name: "${data.name}", 
-                difficulty: "${data.difficulty}", 
-                description: "${data.description}", 
-                landmarks: "${data.landmarks}", 
-                distance: ${distance}, 
-                city: "${data.city}", 
-                polyline: ${JSON.stringify(polylineJson)}
-              ) {
-                route { id, name, difficulty, distance, city, created_at }
-                user { id, email, isPremium, credits }
+              mutation CreateRoute($name: String!, $difficulty: String!, $description: String, $landmarks: String, $distance: Float!, $city: String, $polyline: JSONB!) {
+                createRoute(name: $name, difficulty: $difficulty, description: $description, landmarks: $landmarks, distance: $distance, city: $city, polyline: $polyline) {
+                  route { id, name, difficulty, distance, city, created_at }
+                  user { id, email, isPremium, credits }
+                }
               }
-            }
-          `,
+            `,
+          variables: {
+            name: data.name,
+            difficulty: data.difficulty,
+            description: data.description || null,
+            landmarks: data.landmarks || null,
+            distance,
+            city: data.city || null,
+            polyline: polylineJson,
+          },
         }),
       });
 
       const { data: responseData, errors } = await response.json();
       if (errors) throw new Error(errors[0].message);
 
-      // ✅ token is guaranteed here
       dispatch(
         setAuth({
-          token,
+          token: token ?? null,
           user: responseData.createRoute.user,
         })
       );
@@ -112,16 +135,21 @@ function MapPage() {
 
   function MapClickHandler() {
     useMapEvents({
-      click: (e: { latlng: any }) => {
-        setWaypoints([...waypoints, e.latlng]);
+      click: (e) => {
+        setWaypoints((prev) => [...prev, e.latlng]);
       },
     });
     return null;
   }
 
+  const clearWaypoints = () => {
+    setWaypoints([]);
+    setDistance(0);
+  };
+
   return (
-    <div className="flex min-h-screen bg-primary-100 p-8">
-      <div className="mx-auto flex w-full max-w-6xl gap-8">
+    <div className="min-h-screen bg-primary-100 p-8">
+      <div className="mx-auto flex max-w-6xl gap-8">
         {/* Map */}
         <div className="h-[600px] flex-1 overflow-hidden rounded-lg shadow-md">
           <MapContainer
@@ -136,7 +164,22 @@ function MapPage() {
             <MapClickHandler />
             <Polyline positions={waypoints} color="blue" />
             {waypoints.map((wp, idx) => (
-              <Marker key={idx} position={wp} />
+              <Marker
+                key={idx}
+                position={wp}
+                icon={defaultIcon}
+                draggable
+                eventHandlers={{
+                  dragend: (e) => {
+                    const newWp = e.target.getLatLng();
+                    setWaypoints((prev) => {
+                      const newArr = [...prev];
+                      newArr[idx] = newWp;
+                      return newArr;
+                    });
+                  },
+                }}
+              />
             ))}
           </MapContainer>
         </div>
@@ -144,14 +187,14 @@ function MapPage() {
         {/* Form */}
         <div className="w-96 rounded-lg bg-white p-6 shadow-md">
           <h2 className="mb-6 text-2xl font-bold text-primary-500">
-            Create Route
+            Create New Route
           </h2>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="mb-4">
               <input
-                {...register("name", { required: "Name required" })}
-                placeholder="Name"
-                className="w-full rounded-md border border-gray-400 p-3"
+                {...register("name", { required: "Name is required" })}
+                placeholder="Route Name"
+                className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               {errors.name && (
                 <span className="text-sm text-red-500">
@@ -161,8 +204,10 @@ function MapPage() {
             </div>
             <div className="mb-4">
               <select
-                {...register("difficulty", { required: "Difficulty required" })}
-                className="w-full rounded-md border border-gray-400 p-3"
+                {...register("difficulty", {
+                  required: "Difficulty is required",
+                })}
+                className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="">Select Difficulty</option>
                 <option value="Easy">Easy</option>
@@ -179,39 +224,49 @@ function MapPage() {
               <textarea
                 {...register("description")}
                 placeholder="Description"
-                className="w-full rounded-md border border-gray-400 p-3"
+                className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div className="mb-4">
               <input
                 {...register("landmarks")}
                 placeholder="Landmarks"
-                className="w-full rounded-md border border-gray-400 p-3"
+                className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div className="mb-4">
               <input
                 {...register("city")}
                 placeholder="City"
-                className="w-full rounded-md border border-gray-400 p-3"
+                className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div className="mb-4 text-sm text-gray-400">
               Distance: {distance.toFixed(2)} km
               <br />
-              Credits left: {user?.credits} (Costs 1 credit)
+              Credits: {user?.credits ?? 0} (Costs {user?.isPremium ? 0 : 1}{" "}
+              credit)
             </div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full rounded-md p-3 text-white transition duration-300 ${
-                isLoading
-                  ? "bg-gray-400"
-                  : "bg-secondary-500 hover:bg-primary-500"
-              }`}
-            >
-              {isLoading ? "Creating..." : "Create Route"}
-            </button>
+            <div className="flex gap-4">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`flex-1 rounded-md p-3 text-white transition duration-300 ${
+                  isLoading
+                    ? "cursor-not-allowed bg-gray-400"
+                    : "bg-secondary-500 hover:bg-primary-500"
+                }`}
+              >
+                {isLoading ? "Creating..." : "Create Route"}
+              </button>
+              <button
+                type="button"
+                onClick={clearWaypoints}
+                className="flex-1 rounded-md border border-primary-500 p-3 text-primary-500 transition duration-300 hover:bg-primary-100"
+              >
+                Clear Points
+              </button>
+            </div>
             {error && (
               <span className="mt-4 block text-center text-sm text-red-500">
                 {error}

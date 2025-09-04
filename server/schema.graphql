@@ -1,5 +1,3 @@
-scalar JSONB
-
 type Route {
   id: ID!
   name: String!
@@ -21,14 +19,14 @@ type AuthPayload {
   user: User!
 }
 
-type Query {
-  ping: String!
-  getUserRoutes: [Route!]!
-}
-
 type CreateRoutePayload {
   route: Route!
   user: User!
+}
+
+type Query {
+  ping: String!
+  getUserRoutes: [Route!]!
 }
 
 type Mutation {

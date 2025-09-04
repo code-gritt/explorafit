@@ -3,7 +3,6 @@ const { readFileSync } = require("fs");
 const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { GraphQLJSONObject } = require("graphql-type-json");
 
 // NeonDB connection
 const pool = new Pool({
@@ -35,8 +34,6 @@ const mapRoute = (row) => ({
 
 // Resolvers
 const resolvers = {
-  JSONB: GraphQLJSONObject, // 👈 custom scalar
-
   Query: {
     ping: () => "Pong",
     getUserRoutes: async (_, __, context) => {
@@ -45,10 +42,7 @@ const resolvers = {
 
       try {
         const { rows } = await pool.query(
-          `SELECT id, name, difficulty, distance, city, created_at 
-           FROM routes 
-           WHERE user_id = $1 
-           ORDER BY created_at DESC`,
+          "SELECT id, name, difficulty, distance, city, created_at FROM routes WHERE user_id = $1 ORDER BY created_at DESC",
           [userId]
         );
         return rows.map(mapRoute);
@@ -57,7 +51,6 @@ const resolvers = {
       }
     },
   },
-
   Mutation: {
     signup: async (_, { email, password }) => {
       try {
@@ -69,16 +62,15 @@ const resolvers = {
 
         const passwordHash = await bcrypt.hash(password, 10);
         const { rows } = await pool.query(
-          `INSERT INTO users(email, password_hash, is_premium, credits) 
-           VALUES($1, $2, $3, $4) 
-           RETURNING id, email, is_premium, credits`,
+          "INSERT INTO users(email, password_hash, is_premium, credits) VALUES($1, $2, $3, $4) RETURNING id, email, is_premium, credits",
           [email, passwordHash, false, 3]
         );
 
         const user = mapUser(rows[0]);
         const token = jwt.sign(
           { userId: user.id },
-          process.env.JWT_SECRET || "supersecretfallback",
+          process.env.JWT_SECRET ||
+            "30dfb2a4a8840222dc34b4041f1eebdd07d57b9e5f3f14baed1108340c10b02d10e752b5a9f6dd457bbe1383f779eca4295b2f0974b596d1bd3f4956c9eda8ef",
           { expiresIn: "7d" }
         );
 
@@ -87,13 +79,10 @@ const resolvers = {
         throw new Error(`Signup failed: ${error.message}`);
       }
     },
-
     login: async (_, { email, password }) => {
       try {
         const { rows } = await pool.query(
-          `SELECT id, email, is_premium, credits, password_hash 
-           FROM users 
-           WHERE email = $1`,
+          "SELECT id, email, is_premium, credits, password_hash FROM users WHERE email = $1",
           [email]
         );
         if (!rows[0]) throw new Error("User not found");
@@ -104,7 +93,8 @@ const resolvers = {
         const user = mapUser(rows[0]);
         const token = jwt.sign(
           { userId: user.id },
-          process.env.JWT_SECRET || "supersecretfallback",
+          process.env.JWT_SECRET ||
+            "30dfb2a4a8840222dc34b4041f1eebdd07d57b9e5f3f14baed1108340c10b02d10e752b5a9f6dd457bbe1383f779eca4295b2f0974b596d1bd3f4956c9eda8ef",
           { expiresIn: "7d" }
         );
 
@@ -113,13 +103,12 @@ const resolvers = {
         throw new Error(`Login failed: ${error.message}`);
       }
     },
-
     createRoute: async (_, args, context) => {
       const { userId } = context;
       if (!userId) throw new Error("Unauthorized");
 
       try {
-        // Fetch user credits
+        // Get user credits and isPremium
         const {
           rows: [userRow],
         } = await pool.query(
@@ -145,9 +134,7 @@ const resolvers = {
         const {
           rows: [routeRow],
         } = await pool.query(
-          `INSERT INTO routes(user_id, name, difficulty, description, landmarks, distance, city, polyline) 
-           VALUES($1, $2, $3, $4, $5, $6, $7, $8) 
-           RETURNING id, name, difficulty, distance, city, created_at`,
+          "INSERT INTO routes(user_id, name, difficulty, description, landmarks, distance, city, polyline) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, name, difficulty, distance, city, created_at",
           [
             userId,
             args.name,
@@ -179,23 +166,21 @@ const resolvers = {
   },
 };
 
-// Apollo Server
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  persistedQueries: false, // 👈 prevent DoS risk
   context: ({ req }) => {
     const token = req.headers.authorization || "";
     let userId = null;
-
     if (token) {
       try {
         const decoded = jwt.verify(
           token,
-          process.env.JWT_SECRET || "supersecretfallback"
+          process.env.JWT_SECRET ||
+            "30dfb2a4a8840222dc34b4041f1eebdd07d57b9e5f3f14baed1108340c10b02d10e752b5a9f6dd457bbe1383f779eca4295b2f0974b596d1bd3f4956c9eda8ef"
         );
         userId = decoded.userId;
-      } catch {
+      } catch (error) {
         console.log("Invalid token");
       }
     }
@@ -212,4 +197,6 @@ server
       credentials: true,
     },
   })
-  .then(({ url }) => console.log(`🚀 Server ready at ${url}`));
+  .then(({ url }) => {
+    console.log(`🚀 Server ready at ${url}`);
+  });

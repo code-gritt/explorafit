@@ -136,12 +136,7 @@ const Navbar = ({ isTopOfPage, selectedPage, setSelectedPage }: Props) => {
                           setSelectedPage={setSelectedPage}
                           isRoute
                         />
-                        <Link
-                          page="Create Route"
-                          selectedPage={selectedPage}
-                          setSelectedPage={setSelectedPage}
-                          isMapRoute
-                        />
+                        <a href="/map">Map</a>
                         <button
                           onClick={handleLogout}
                           className="rounded-md bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"

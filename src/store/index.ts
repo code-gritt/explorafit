@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./authSlice";
-import storage from "redux-persist/lib/storage"; // defaults to localStorage for web
+import storage from "redux-persist/lib/storage"; // localStorage for web
 import { persistReducer, persistStore } from "redux-persist";
 
 const persistConfig = {
@@ -16,7 +16,7 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false,
+      serializableCheck: false, // required for redux-persist
     }),
 });
 
