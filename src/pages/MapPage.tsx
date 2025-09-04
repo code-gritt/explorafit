@@ -14,7 +14,7 @@ import { RootState } from "@/store";
 import { setAuth } from "@/store/authSlice";
 import L from "leaflet";
 
-// Leaflet default icon fix for Vite
+// Fix Leaflet default icon for Vite
 const icon = L.icon({
   iconUrl: "/leaflet/marker-icon.png",
   iconRetinaUrl: "/leaflet/marker-icon-2x.png",
@@ -39,6 +39,7 @@ function MapPage() {
   const { token, user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -50,7 +51,7 @@ function MapPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect to login if not authenticated
+  // Redirect if not authenticated
   useEffect(() => {
     if (!token || !user) {
       navigate("/login");
@@ -59,22 +60,37 @@ function MapPage() {
 
   // Calculate total distance in km
   useEffect(() => {
-    if (waypoints.length < 2) return setDistance(0);
-
+    if (waypoints.length < 2) {
+      setDistance(0);
+      return;
+    }
     const total = waypoints.reduce((acc, curr, idx) => {
       if (idx === 0) return 0;
       return acc + waypoints[idx - 1].distanceTo(curr) / 1000;
     }, 0);
-
     setDistance(parseFloat(total.toFixed(2)));
   }, [waypoints]);
 
-  // Submit handler
+  // Map click handler
+  function MapClickHandler() {
+    useMapEvents({
+      click: (e) => setWaypoints((prev) => [...prev, e.latlng]),
+    });
+    return null;
+  }
+
+  const clearWaypoints = () => {
+    setWaypoints([]);
+    setDistance(0);
+  };
+
+  // Form submit handler
   const onSubmit = async (data: FormData) => {
     if (waypoints.length < 2) {
       setError("Add at least two points to create a route");
       return;
     }
+
     if (user && !user.isPremium && (user.credits ?? 0) <= 0) {
       setError("Insufficient credits to create a route");
       return;
@@ -84,10 +100,10 @@ function MapPage() {
     setError(null);
 
     try {
-      const polylineJson = waypoints.map((wp) => ({
-        lat: wp.lat,
-        lng: wp.lng,
-      }));
+      // Fix: PostgreSQL expects JSON string for JSON type
+      const polylineJson = JSON.stringify(
+        waypoints.map((wp) => ({ lat: wp.lat, lng: wp.lng }))
+      );
 
       const response = await fetch("https://explorafit-backend.onrender.com", {
         method: "POST",
@@ -98,21 +114,21 @@ function MapPage() {
         body: JSON.stringify({
           query: `
             mutation CreateRoute(
-              $name: String!, 
-              $difficulty: String!, 
-              $description: String, 
-              $landmarks: String, 
-              $distance: Float!, 
-              $city: String, 
+              $name: String!,
+              $difficulty: String!,
+              $description: String,
+              $landmarks: String,
+              $distance: Float!,
+              $city: String,
               $polyline: JSON!
             ) {
               createRoute(
-                name: $name, 
-                difficulty: $difficulty, 
-                description: $description, 
-                landmarks: $landmarks, 
-                distance: $distance, 
-                city: $city, 
+                name: $name,
+                difficulty: $difficulty,
+                description: $description,
+                landmarks: $landmarks,
+                distance: $distance,
+                city: $city,
                 polyline: $polyline
               ) {
                 route { id, name, difficulty, distance, city, created_at }
@@ -135,7 +151,6 @@ function MapPage() {
       const { data: responseData, errors } = await response.json();
       if (errors) throw new Error(errors[0].message);
 
-      // Update Redux auth state
       dispatch(
         setAuth({
           token: token ?? "",
@@ -151,22 +166,9 @@ function MapPage() {
     }
   };
 
-  // Map click handler
-  function MapClickHandler() {
-    useMapEvents({
-      click: (e) => setWaypoints((prev) => [...prev, e.latlng]),
-    });
-    return null;
-  }
-
-  const clearWaypoints = () => {
-    setWaypoints([]);
-    setDistance(0);
-  };
-
   return (
     <div className="min-h-screen bg-primary-100 p-8">
-      <div className="mx-auto flex max-w-6xl gap-8">
+      <div className="mx-auto mt-16 flex max-w-6xl gap-8">
         {/* Map */}
         <div className="h-[600px] flex-1 overflow-hidden rounded-lg shadow-md">
           <MapContainer
@@ -217,6 +219,7 @@ function MapPage() {
                 </span>
               )}
             </div>
+
             <div className="mb-4">
               <select
                 {...register("difficulty", {
@@ -235,6 +238,7 @@ function MapPage() {
                 </span>
               )}
             </div>
+
             <div className="mb-4">
               <textarea
                 {...register("description")}
@@ -242,6 +246,7 @@ function MapPage() {
                 className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
+
             <div className="mb-4">
               <input
                 {...register("landmarks")}
@@ -249,6 +254,7 @@ function MapPage() {
                 className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
+
             <div className="mb-4">
               <input
                 {...register("city")}
@@ -256,12 +262,14 @@ function MapPage() {
                 className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
+
             <div className="mb-4 text-sm text-gray-400">
               Distance: {distance.toFixed(2)} km
               <br />
               Credits: {user?.credits ?? 0} (Costs {user?.isPremium ? 0 : 1}{" "}
               credit)
             </div>
+
             <div className="flex gap-4">
               <button
                 type="submit"
@@ -282,6 +290,7 @@ function MapPage() {
                 Clear Points
               </button>
             </div>
+
             {error && (
               <span className="mt-4 block text-center text-sm text-red-500">
                 {error}
