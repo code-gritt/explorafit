@@ -18,10 +18,10 @@ import { setAuth } from "@/store/authSlice";
 import Loader from "@/scenes/Loader";
 
 const markerIcon = L.icon({
-  iconUrl: "/leaflet/marker-icon.png",
+  iconUrl: "/marker-icon.png",
   iconRetinaUrl: "/leaflet/marker-icon-2x.png",
   shadowUrl: "/leaflet/marker-shadow.png",
-  iconSize: [25, 41],
+  iconSize: [50, 50],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
