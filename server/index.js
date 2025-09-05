@@ -209,7 +209,7 @@ server
   .listen({
     port: process.env.PORT || 4000,
     cors: {
-      origin: ["http://localhost:3000", "https://explorafit.vercel.app"],
+      origin: ["http://localhost:5173", "https://explorafit.vercel.app"],
       credentials: true,
     },
   })
