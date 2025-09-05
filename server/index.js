@@ -141,7 +141,6 @@ const resolvers = {
       if (!userRow.is_premium && userRow.credits <= 0)
         throw new Error("Insufficient credits");
 
-      // Deduct credit if not premium
       if (!userRow.is_premium) {
         await pool.query(
           "UPDATE users SET credits = credits - 1 WHERE id = $1",
@@ -165,7 +164,7 @@ const resolvers = {
           args.landmarks,
           args.distance,
           args.city,
-          args.polyline, // will be stored as JSONB
+          JSON.stringify(args.polyline),
         ]
       );
 
