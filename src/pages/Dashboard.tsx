@@ -143,7 +143,7 @@ function Dashboard() {
 
       {/* Dashboard UI */}
       <div className="min-h-screen bg-primary-100 p-8">
-        <div className="mx-auto mt-16 max-w-6xl rounded-lg bg-white p-6 shadow-md">
+        <div className="mx-auto mt-16 max-w-6xl rounded-lg bg-white shadow-md">
           {error && <div className="text-center text-red-500">{error}</div>}
 
           {!error && routes.length === 0 && !isLoading && (
