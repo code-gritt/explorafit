@@ -4,9 +4,12 @@ type Route {
   id: ID!
   name: String!
   difficulty: String!
+  description: String
+  landmarks: String
   distance: Float!
   city: String
   created_at: String!
+  polyline: JSON
 }
 
 type User {

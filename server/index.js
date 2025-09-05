@@ -54,11 +54,13 @@ const mapRoute = (row) => ({
   id: row.id,
   name: row.name,
   difficulty: row.difficulty,
+  description: row.description,
+  landmarks: row.landmarks,
   distance: row.distance,
   city: row.city,
   created_at: row.created_at.toISOString(),
+  polyline: row.polyline,
 });
-
 // Resolvers
 const resolvers = {
   JSON: JSONScalar,
