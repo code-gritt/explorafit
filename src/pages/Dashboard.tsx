@@ -11,6 +11,8 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface PolylinePoint {
   lat: number;
@@ -136,24 +138,118 @@ function Dashboard() {
     getSortedRowModel: getSortedRowModel(),
   });
 
+  // CSV Export
+  const handleExportCSV = () => {
+    const headers = [
+      "ID",
+      "Name",
+      "Difficulty",
+      "Description",
+      "Landmarks",
+      "Distance (km)",
+      "City",
+      "Created At",
+      "Polyline",
+    ];
+    const rows = routes.map((route) => [
+      route.id,
+      `"${route.name.replace(/"/g, '""')}"`,
+      route.difficulty,
+      `"${(route.description || "").replace(/"/g, '""')}"`,
+      `"${(route.landmarks || "").replace(/"/g, '""')}"`,
+      route.distance,
+      `"${(route.city || "N/A").replace(/"/g, '""')}"`,
+      new Date(route.created_at).toLocaleDateString(),
+      `"${JSON.stringify(route.polyline || [])}"`,
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "routes_export.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // PDF Export
+  const handleExportPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    // Title
+    doc.setFontSize(18);
+    doc.text("Your Routes", 14, 20);
+
+    // Table
+    autoTable(doc, {
+      startY: 30,
+      head: [
+        [
+          "ID",
+          "Name",
+          "Difficulty",
+          "Description",
+          "Landmarks",
+          "Distance (km)",
+          "City",
+          "Created At",
+          "Polyline",
+        ],
+      ],
+      body: routes.map((route) => [
+        route.id,
+        route.name,
+        route.difficulty,
+        route.description || "N/A",
+        route.landmarks || "N/A",
+        route.distance,
+        route.city || "N/A",
+        new Date(route.created_at).toLocaleDateString(),
+        JSON.stringify(route.polyline || []),
+      ]),
+      styles: { fontSize: 8, cellWidth: "wrap" },
+      headStyles: { fillColor: [99, 102, 241] }, // Tailwind primary-500 purple
+    });
+
+    // Save PDF
+    doc.save("routes_export.pdf");
+  };
+
   return (
     <>
-      {/* Loader overlay */}
       <Loader isLoading={isLoading} />
-
-      {/* Dashboard UI */}
       <div className="min-h-screen bg-primary-100 p-8">
-        <div className="mx-auto mt-16 max-w-6xl rounded-lg bg-white shadow-md">
+        <div className="mx-auto mt-16 max-w-6xl">
+          <div className="mb-6 flex justify-end gap-4">
+            <button
+              onClick={handleExportCSV}
+              className="rounded-md bg-secondary-500 px-4 py-2 text-white hover:bg-primary-500"
+              disabled={isLoading || routes.length === 0}
+            >
+              Download CSV
+            </button>
+            <button
+              onClick={handleExportPDF}
+              className="rounded-md bg-secondary-500 px-4 py-2 text-white hover:bg-primary-500"
+              disabled={isLoading || routes.length === 0}
+            >
+              Download PDF
+            </button>
+          </div>
           {error && <div className="text-center text-red-500">{error}</div>}
-
           {!error && routes.length === 0 && !isLoading && (
             <div className="text-center text-gray-400">
               No routes found. Create one!
             </div>
           )}
-
           {!error && routes.length > 0 && !isLoading && (
-            <table className="w-full overflow-hidden rounded-lg shadow-md">
+            <table className="w-full overflow-hidden rounded-lg bg-white shadow-md">
               <thead className="bg-secondary-500 text-white">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>

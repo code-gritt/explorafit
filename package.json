@@ -13,6 +13,8 @@
     "@reduxjs/toolkit": "^2.9.0",
     "@tanstack/react-table": "^8.21.3",
     "framer-motion": "^7.6.19",
+    "jspdf": "^3.0.2",
+    "jspdf-autotable": "^5.0.2",
     "leaflet": "^1.9.4",
     "react": "^18.2.0",
     "react-anchor-link-smooth-scroll": "^1.0.12",
