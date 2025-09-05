@@ -8,14 +8,16 @@ import {
   Polyline,
   Marker,
   useMapEvents,
+  useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
 import { RootState } from "@/store";
 import { setAuth } from "@/store/authSlice";
-import L from "leaflet";
 import Loader from "@/scenes/Loader";
 
-const icon = L.icon({
+const markerIcon = L.icon({
   iconUrl: "/leaflet/marker-icon.png",
   iconRetinaUrl: "/leaflet/marker-icon-2x.png",
   shadowUrl: "/leaflet/marker-shadow.png",
@@ -45,6 +47,30 @@ interface Route {
   polyline: { lat: number; lng: number }[] | null;
 }
 
+/** Auto-fit map bounds to waypoints */
+function FitBounds({ waypoints }: { waypoints: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (waypoints.length > 1) {
+      map.fitBounds(waypoints);
+    }
+  }, [waypoints, map]);
+  return null;
+}
+
+/** Handle map clicks */
+function MapClickHandler({
+  setWaypoints,
+}: {
+  setWaypoints: React.Dispatch<React.SetStateAction<[number, number][]>>;
+}) {
+  useMapEvents({
+    click: (e) =>
+      setWaypoints((prev) => [...prev, [e.latlng.lat, e.latlng.lng]]),
+  });
+  return null;
+}
+
 function MapPage() {
   const { token, user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
@@ -59,7 +85,7 @@ function MapPage() {
     formState: { errors },
   } = useForm<FormData>();
 
-  const [waypoints, setWaypoints] = useState<L.LatLng[]>([]);
+  const [waypoints, setWaypoints] = useState<[number, number][]>([]);
   const [distance, setDistance] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,7 +95,7 @@ function MapPage() {
     if (!token || !user) navigate("/login");
   }, [token, user, navigate]);
 
-  // Preload data if route is passed
+  // Preload route if passed from dashboard
   useEffect(() => {
     if (preloadedRoute) {
       reset({
@@ -81,31 +107,30 @@ function MapPage() {
       });
 
       if (preloadedRoute.polyline) {
-        const latlngs = preloadedRoute.polyline.map(
-          (p) => new L.LatLng(p.lat, p.lng)
+        setWaypoints(
+          preloadedRoute.polyline.map((p) => [p.lat, p.lng] as [number, number])
         );
-        setWaypoints(latlngs);
       }
-
       setDistance(preloadedRoute.distance ?? 0);
     }
   }, [preloadedRoute, reset]);
 
-  // Auto calculate distance if user edits/creates
+  // Auto calculate distance whenever waypoints change
   useEffect(() => {
-    if (waypoints.length < 2) return setDistance(0);
+    if (waypoints.length < 2) {
+      setDistance(0);
+      return;
+    }
     const total = waypoints.reduce(
       (acc, curr, idx) =>
-        idx === 0 ? 0 : acc + waypoints[idx - 1].distanceTo(curr) / 1000,
+        idx === 0
+          ? 0
+          : acc +
+            L.latLng(waypoints[idx - 1]).distanceTo(L.latLng(curr)) / 1000,
       0
     );
     setDistance(parseFloat(total.toFixed(2)));
   }, [waypoints]);
-
-  function MapClickHandler() {
-    useMapEvents({ click: (e) => setWaypoints((prev) => [...prev, e.latlng]) });
-    return null;
-  }
 
   const clearWaypoints = () => {
     setWaypoints([]);
@@ -113,18 +138,21 @@ function MapPage() {
   };
 
   const onSubmit = async (data: FormData) => {
-    if (waypoints.length < 2)
-      return setError("Add at least two points to create a route");
-    if (user && !user.isPremium && (user.credits ?? 0) <= 0)
-      return setError("Insufficient credits to create a route");
+    if (waypoints.length < 2) {
+      setError("Add at least two points to create a route");
+      return;
+    }
+    if (user && !user.isPremium && (user.credits ?? 0) <= 0) {
+      setError("Insufficient credits to create a route");
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const polylineJson = JSON.stringify(
-        waypoints.map((wp) => ({ lat: wp.lat, lng: wp.lng }))
-      );
+      const polyline = waypoints.map(([lat, lng]) => ({ lat, lng }));
+
       const response = await fetch("https://explorafit-backend.onrender.com", {
         method: "POST",
         headers: {
@@ -133,8 +161,24 @@ function MapPage() {
         },
         body: JSON.stringify({
           query: `
-            mutation CreateRoute($name: String!, $difficulty: String!, $description: String, $landmarks: String, $distance: Float!, $city: String, $polyline: JSON!) {
-              createRoute(name: $name, difficulty: $difficulty, description: $description, landmarks: $landmarks, distance: $distance, city: $city, polyline: $polyline) {
+            mutation CreateRoute(
+              $name: String!, 
+              $difficulty: String!, 
+              $description: String, 
+              $landmarks: String, 
+              $distance: Float!, 
+              $city: String, 
+              $polyline: JSON!
+            ) {
+              createRoute(
+                name: $name, 
+                difficulty: $difficulty, 
+                description: $description, 
+                landmarks: $landmarks, 
+                distance: $distance, 
+                city: $city, 
+                polyline: $polyline
+              ) {
                 route { id, name, difficulty, distance, city, created_at }
                 user { id, email, isPremium, credits }
               }
@@ -143,7 +187,7 @@ function MapPage() {
           variables: {
             ...data,
             distance,
-            polyline: polylineJson,
+            polyline,
             description: data.description || null,
             landmarks: data.landmarks || null,
             city: data.city || null,
@@ -168,6 +212,7 @@ function MapPage() {
   return (
     <div className="min-h-screen bg-primary-100 p-8">
       <Loader isLoading={isLoading} />
+
       <div className="mx-auto mt-16 flex max-w-6xl gap-8">
         {/* Map */}
         <div className="h-[600px] flex-1 overflow-hidden rounded-lg shadow-md">
@@ -180,18 +225,28 @@ function MapPage() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution="&copy; OpenStreetMap contributors"
             />
-            {!preloadedRoute && <MapClickHandler />}
-            <Polyline positions={waypoints} color="blue" />
+            {!preloadedRoute && <MapClickHandler setWaypoints={setWaypoints} />}
+            {waypoints.length > 1 && (
+              <Polyline
+                positions={waypoints}
+                pathOptions={{ color: "blue", weight: 5 }}
+              />
+            )}
+            <FitBounds waypoints={waypoints} />
             {waypoints.map((wp, idx) => (
               <Marker
                 key={idx}
                 position={wp}
-                icon={icon}
+                icon={markerIcon}
                 draggable={!preloadedRoute}
                 eventHandlers={{
                   dragend: (e) =>
                     setWaypoints((prev) =>
-                      prev.map((p, i) => (i === idx ? e.target.getLatLng() : p))
+                      prev.map((p, i) =>
+                        i === idx
+                          ? [e.target.getLatLng().lat, e.target.getLatLng().lng]
+                          : p
+                      )
                     ),
                 }}
               />
@@ -204,7 +259,9 @@ function MapPage() {
           <h2 className="mb-6 text-2xl font-bold text-primary-500">
             {preloadedRoute ? "View Route" : "Create New Route"}
           </h2>
+
           <form onSubmit={handleSubmit(onSubmit)}>
+            {/* Name */}
             <div className="mb-4">
               <input
                 {...register("name", { required: "Name is required" })}
@@ -219,6 +276,7 @@ function MapPage() {
               )}
             </div>
 
+            {/* Difficulty */}
             <div className="mb-4">
               <select
                 {...register("difficulty", {
@@ -239,6 +297,7 @@ function MapPage() {
               )}
             </div>
 
+            {/* Description */}
             <div className="mb-4">
               <textarea
                 {...register("description")}
@@ -247,6 +306,8 @@ function MapPage() {
                 className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
+
+            {/* Landmarks */}
             <div className="mb-4">
               <input
                 {...register("landmarks")}
@@ -255,6 +316,8 @@ function MapPage() {
                 className="w-full rounded-md border border-gray-400 p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
+
+            {/* City */}
             <div className="mb-4">
               <input
                 {...register("city")}
@@ -264,12 +327,14 @@ function MapPage() {
               />
             </div>
 
+            {/* Distance & Credits */}
             <div className="mb-4 text-sm text-gray-400">
               Distance: {distance.toFixed(2)} km <br />
               Credits: {user?.credits ?? 0} (Costs {user?.isPremium ? 0 : 1}{" "}
               credit)
             </div>
 
+            {/* Buttons */}
             {!preloadedRoute && (
               <div className="flex gap-4">
                 <button

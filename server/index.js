@@ -59,8 +59,9 @@ const mapRoute = (row) => ({
   distance: row.distance,
   city: row.city,
   created_at: row.created_at.toISOString(),
-  polyline: row.polyline,
+  polyline: row.polyline, // already JSON if column is jsonb
 });
+
 // Resolvers
 const resolvers = {
   JSON: JSONScalar,
@@ -71,9 +72,14 @@ const resolvers = {
       if (!userId) throw new Error("Unauthorized");
 
       const { rows } = await pool.query(
-        "SELECT id, name, difficulty, distance, city, created_at FROM routes WHERE user_id = $1 ORDER BY created_at DESC",
+        `SELECT id, name, difficulty, description, landmarks,
+                distance, city, created_at, polyline
+         FROM routes
+         WHERE user_id = $1
+         ORDER BY created_at DESC`,
         [userId]
       );
+
       return rows.map(mapRoute);
     },
   },
@@ -87,7 +93,9 @@ const resolvers = {
 
       const passwordHash = await bcrypt.hash(password, 10);
       const { rows } = await pool.query(
-        "INSERT INTO users(email, password_hash, is_premium, credits) VALUES($1, $2, $3, $4) RETURNING id, email, is_premium, credits",
+        `INSERT INTO users(email, password_hash, is_premium, credits)
+         VALUES($1, $2, $3, $4)
+         RETURNING id, email, is_premium, credits`,
         [email, passwordHash, false, 3]
       );
 
@@ -99,6 +107,7 @@ const resolvers = {
       );
       return { token, user };
     },
+
     login: async (_, { email, password }) => {
       const { rows } = await pool.query(
         "SELECT id, email, is_premium, credits, password_hash FROM users WHERE email = $1",
@@ -117,6 +126,7 @@ const resolvers = {
       );
       return { token, user };
     },
+
     createRoute: async (_, args, context) => {
       const { userId } = context;
       if (!userId) throw new Error("Unauthorized");
@@ -142,7 +152,11 @@ const resolvers = {
       const {
         rows: [routeRow],
       } = await pool.query(
-        "INSERT INTO routes(user_id, name, difficulty, description, landmarks, distance, city, polyline) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, name, difficulty, distance, city, created_at",
+        `INSERT INTO routes(user_id, name, difficulty, description,
+                            landmarks, distance, city, polyline)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+         RETURNING id, name, difficulty, description, landmarks,
+                   distance, city, created_at, polyline`,
         [
           userId,
           args.name,
@@ -151,7 +165,7 @@ const resolvers = {
           args.landmarks,
           args.distance,
           args.city,
-          args.polyline,
+          args.polyline, // will be stored as JSONB
         ]
       );
 
